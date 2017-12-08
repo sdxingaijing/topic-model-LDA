@@ -1,6 +1,7 @@
 #install.packages("tm")
 library(tm)
-
+# the data is from Kaggle https://www.kaggle.com/snap/amazon-fine-food-reviews/data  download it by yourself
+#
 Reviews <- read.csv("C:/Users/sdxin/Desktop/amazon-fine-foods/Reviews.csv", stringsAsFactors=FALSE)
 #sales volume is more than 560, four goods
 dat.n <-names(which(summary(as.factor(Reviews[,2])) > 560)) #1760 customers 
@@ -67,7 +68,8 @@ sort_tdm <- sort(freq_tdm, decreasing = TRUE) #frequency of words
 V <- dim(tdm)[1] #number of terms(vocabulary)  743
 D <- dim(tdm)[2] #number of documents(reviews) 1760
 K <- 5          #number of topics              5
-#after the mcmc iterations, 3000 iterations are necessary for convergency, bust still not enough
+
+#after the mcmc(collapsed Gibbs sampling) iterations, 3000 iterations are necessary for convergency, bust still not enough
 niters <- 2000    #number of iterations of burn in period
 aftniters <- 2000 #number of iterations after burn in period, 4000 iterations takes about 4 hours
 alpha = 0.001    
@@ -151,10 +153,9 @@ for(it in 1:niters) {
       # find the probability of topic k generating the word w, it will be multi nomial
       multkw <- rep(0.0, K)
       for (k in 1:K) {
-        multkw[k] <- (ndkMatrix[d,k] + alpha)*(nkwMatrix[wordId,k]+ beta)/(nk[k] + beta*V) 
-        #multkw[k] <- 0.3
+        multkw[k] <- (ndkMatrix[d,k] + alpha)*(nkwMatrix[wordId,k]+ beta)/(nk[k] + beta*V) # conditional posterior probability of topic assignment
       }
-      # sample new topic [1,K] from multinomial distribution and update the topic assignment for current word.
+      # sample new topic [1,K] from multinomial distribution and update the topic assignment for objective word.
       wordNewTopic <- sample(K,size=1, prob = multkw)
       docWordTopics[[wdIdx]] <- wordNewTopic
       
@@ -191,7 +192,7 @@ for(it in 1:niters) {
     }
   }
   
-  #record the trace of theta and phi
+  #record the trace of theta and phi, it can be used to check the convergency
   hist_theta[it,] <- colMeans(theta)
   hist_phi[it,] <- colMeans(phi)
 } #gibbs sampling iteration loop ends here.
